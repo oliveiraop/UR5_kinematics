@@ -6,6 +6,10 @@
 # blocking example, see simpleTest-nonBlocking.py
 
 import time
+from ur5_fk import ur5_fk
+
+import numpy as np
+from kinematics import UR5_arm
 
 from zmqRemoteApi import RemoteAPIClient
 import math
@@ -47,28 +51,67 @@ sim.startSimulation()
 
 
 currentConf = [ 0, 0, 0, 0, 0, 0 ]
-
-targetConfig = [
-    (300 * math.pi / 180), (14.78 * math.pi / 180) + math.pi/2,  63.25 * math.pi / 180 , -78.04 * math.pi / 180, (180 * math.pi / 180) + math.pi/2, 59 * math.pi / 180
-]
+ur5 = UR5_arm()
+target_angles = [90, 0, 45, 45, 45, 60]
+targetConfig = [x*math.pi/180 for x in target_angles]
+matrix = ur5.forward_kinematic(*targetConfig)
+print(f"Forward kinematic 1 = \n{matrix}")
+matrix = ur5_fk(targetConfig)
+print(f"Forward kinematic 2 = \n{matrix}")
 
 sim.moveToConfig(-1,currentConf,None,None,maxVel,maxAccel,maxJerk,targetConfig,None,movCallback,jointHandles)
 
-time.sleep(5)
+tool = sim.getObject('/UR5/UR5_connection')
+tool_matrix = sim.getObjectMatrix(tool, sim.handle_world)
+tool_matrix = np.matrix([tool_matrix[0:4], tool_matrix[4:8], tool_matrix[8:12], [0,0,0,1]])
+tool_matrix[abs(tool_matrix) < 5e-4] = 0
+print(f"Object Matrix = \n{tool_matrix}")
 
 
-shape = sim.getObject('/Cup')
-tool_matrix = sim.getObjectMatrix(shape, sim.handle_world)
-print(f"Matrix copo = {tool_matrix}")
+currentConf = targetConfig
+ur5 = UR5_arm()
+target_angles = [45, 30, 60, 30, 90, 30]
+targetConfig = [x*math.pi/180 for x in target_angles]
+matrix = ur5.forward_kinematic(*targetConfig)
+print(f"Forward kinematic = \n{matrix}")
+
+sim.moveToConfig(-1,currentConf,None,None,maxVel,maxAccel,maxJerk,targetConfig,None,movCallback,jointHandles)
 
 tool = sim.getObject('/UR5/UR5_connection')
-tool_position = sim.getObjectPosition(tool, sim.handle_world)
-print(f"posicao_garra_sim = {tool_position}")
-tool_orientation = sim.getObjectOrientation(tool, sim.handle_world)
-print(f"orientation = {tool_orientation}")
+tool_matrix = sim.getObjectMatrix(tool, sim.handle_world)
+tool_matrix = np.matrix([tool_matrix[0:4], tool_matrix[4:8], tool_matrix[8:12], [0,0,0,1]])
+tool_matrix[abs(tool_matrix) < 5e-4] = 0
+print(f"Object Matrix = \n{tool_matrix}")
+
+currentConf = targetConfig
+ur5 = UR5_arm()
+target_angles = [85, 15, 40, 50, 60, 20]
+targetConfig = [x*math.pi/180 for x in target_angles]
+matrix = ur5.forward_kinematic(*targetConfig)
+print(f"Forward kinematic = \n{matrix}")
+
+sim.moveToConfig(-1,currentConf,None,None,maxVel,maxAccel,maxJerk,targetConfig,None,movCallback,jointHandles)
+
+tool = sim.getObject('/UR5/UR5_connection')
+tool_matrix = sim.getObjectMatrix(tool, sim.handle_world)
+tool_matrix = np.matrix([tool_matrix[0:4], tool_matrix[4:8], tool_matrix[8:12], [0,0,0,1]])
+tool_matrix[abs(tool_matrix) < 5e-4] = 0
+print(f"Object Matrix = \n{tool_matrix}")
+
+
+
+
+
+
+
+""" shape = sim.getObject('/Cup')
+tool_matrix = sim.getObjectMatrix(shape, sim.handle_world)
+print(f"Matrix copo = {tool_matrix}") """
+""" 
+tool = sim.getObject('/UR5/UR5_connection')
 tool_matrix = sim.getObjectMatrix(tool, sim.handle_world)
 print(f"Matrix = {tool_matrix}")
-
+ """
 """currentConf = targetConfig
 targetConfig = [
     -90 * math.pi / 180, -45 * math.pi / 180, 90 * math.pi / 180, 90 * math.pi / 180, 90 * math.pi / 180, 90 * math.pi / 180
