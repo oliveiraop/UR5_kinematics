@@ -198,7 +198,7 @@ class UR5_arm:
       print(solutions*180/pi)
 
     def cubic(self, qi, qf, vi, vf, ti, tf):
-      t = np.arange(ti, tf, (tf-ti)/100)
+      t = np.arange(ti, tf, 0.05)
       c = np.ones(t.size)
       m = np.matrix([
         [1, ti, ti*ti, ti*ti*ti],

@@ -46,12 +46,12 @@ mJerk = 100 * math.pi / 180
 maxVel=[mVel, mVel, mVel, mVel, mVel, mVel]
 maxAccel=[mAccel, mAccel, mAccel, mAccel, mAccel, mAccel]
 maxJerk=[mJerk, mJerk, mJerk, mJerk, mJerk, mJerk]
+ur5 = UR5_arm()
 
 sim.startSimulation()
 
 
 currentConf = [ 0, 0, 0, 0, 0, 0 ]
-ur5 = UR5_arm()
 target_angles = [90, 0, 45, 45, 45, 60]
 targetConfig = [x*math.pi/180 for x in target_angles]
 matrix = ur5.forward_kinematic(*targetConfig)
@@ -69,7 +69,6 @@ print(f"Object Matrix = \n{tool_matrix}")
 
 
 currentConf = targetConfig
-ur5 = UR5_arm()
 target_angles = [45, 30, 60, 30, 90, 30]
 targetConfig = [x*math.pi/180 for x in target_angles]
 matrix = ur5.forward_kinematic(*targetConfig)
@@ -84,7 +83,6 @@ tool_matrix[abs(tool_matrix) < 5e-4] = 0
 print(f"Object Matrix = \n{tool_matrix}")
 
 currentConf = targetConfig
-ur5 = UR5_arm()
 target_angles = [85, 15, 40, 50, 60, 20]
 targetConfig = [x*math.pi/180 for x in target_angles]
 matrix = ur5.forward_kinematic(*targetConfig)
@@ -102,50 +100,47 @@ print(f"Object Matrix = \n{tool_matrix}")
 
 
 
-
-
-""" shape = sim.getObject('/Cup')
-tool_matrix = sim.getObjectMatrix(shape, sim.handle_world)
-print(f"Matrix copo = {tool_matrix}") """
-""" 
-tool = sim.getObject('/UR5/UR5_connection')
-tool_matrix = sim.getObjectMatrix(tool, sim.handle_world)
-print(f"Matrix = {tool_matrix}")
- """
-"""currentConf = targetConfig
-targetConfig = [
-    -90 * math.pi / 180, -45 * math.pi / 180, 90 * math.pi / 180, 90 * math.pi / 180, 90 * math.pi / 180, 90 * math.pi / 180
-]
-
-sim.moveToConfig(-1,currentConf,None,None,maxVel,maxAccel,maxJerk,targetConfig,None,movCallback,jointHandles)
- """
 sim.stopSimulation()
 
-# Run a simulation in asynchronous mode:
-""" 
-while (t := sim.getSimulationTime()) < 10:
-    s = f'Simulation time: {t:.2f} [s] (simulation running asynchronously '\
-        'to client, i.e. non-stepped)'
-    print(s)
-    sim.setJointPosition(joint1, 90 * math.pi / 180)
-    sim.addLog(sim.verbosity_scriptinfos, s)
-sim.stopSimulation()
-# If you need to make sure we really stopped:
-while sim.getSimulationState() != sim.simulation_stopped:
-    time.sleep(0.1) """
-"""
-# Run a simulation in stepping mode:
 client.setStepping(True)
+
 sim.startSimulation()
-while (t := sim.getSimulationTime()) < 3:
-    s = f'Simulation time: {t:.2f} [s] (simulation running synchronously '\
-        'to client, i.e. stepped)'
-    print(s)
-    sim.addLog(sim.verbosity_scriptinfos, s)
-    client.step()  # triggers next simulation step
+
+def moveToAngle(target_angles, targetVels, joint_handles):
+    done = [False for x in range(0, len(target_angles))]
+    while (not all(done)):
+        joint_angles = [sim.getJointPosition(x) for x in joint_handles]
+        for idx, value in enumerate(target_angles):
+            if (abs(joint_angles[idx] - target_angles[idx]) > 0.1 * math.pi / 180):
+                sim.setJointTargetVelocity(joint_handles[idx], targetVels[idx])
+                sim.setJointMaxForce(joint_handles[idx], 100)
+        client.step()
+
+jointHandles = [ 
+    sim.getObject('/UR5/UR5_joint1'),
+    sim.getObject('/UR5/UR5_joint2'),
+    sim.getObject('/UR5/UR5_joint3'),
+    sim.getObject('/UR5/UR5_joint4'),
+    sim.getObject('/UR5/UR5_joint5'),
+    sim.getObject('/UR5/UR5_joint6'),
+    ]
+currentConf = [ 0, 0, 0, 0, 0, 0 ]
+target_angles = [90, 0, 45, 45, 45, 60]
+targetConfig = [x*math.pi/180 for x in target_angles]
+matrix = ur5.forward_kinematic(*targetConfig)
+
+pos = []
+vel = []
+accel = []
+
+for i, value in enumerate(targetConfig):
+    pos[i], vel[i], accel[i] = ur5.cubic(currentConf[i], targetConfig[i], 0, 0, 0, 10)
+
+for idx, value in enumerate(pos[0]):
+    moveToAngle([v[idx] for v in pos], [v[idx] for v in vel], jointHandles)
+
 sim.stopSimulation()
-"""
-# Remove the dummies created earlier:
+
 
 # Restore the original idle loop frequency:
 sim.setInt32Param(sim.intparam_idle_fps, defaultIdleFps)
