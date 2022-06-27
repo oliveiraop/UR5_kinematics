@@ -146,8 +146,9 @@ def ur5_ik(t_o_0, t_o_6):
         result = np.arctan2(r(x_3_4_y), r(x_3_4_x))
         theta[i, 3] = result
 
-    # theta_drop_nan = theta[~np.isnan(theta).any(axis=1)]
-    return theta
+    theta_drop_nan = theta[~np.isnan(theta).any(axis=1)]
+
+    return theta_drop_nan
 
 
 # Gera matriz de transformacao a partir de posicao e orientacao
@@ -239,6 +240,7 @@ def reset_joints():
 # Inicia cliente e salva instancia do simulador atraves de API ZMQ
 client = RemoteAPIClient()
 sim = client.getObject("sim")
+np.set_printoptions(precision=4, suppress=True)
 
 # Encontra matriz de transformacao da base para a pos final
 base_pos = np.array([[-0.214, -0.314, 0.41]])
@@ -253,38 +255,6 @@ t_o_6 = get_t_matrix(final_pos, final_ori)
 theta_matrix = ur5_ik(t_o_0, t_o_6)
 
 print(f"\nTeste:\nfinal_pos = {final_pos}\nfinal_ori = {np.round_(final_ori, 4)}\n")
-print(f"theta_matrix = \n{np.round_(theta_matrix, 4)}\n")
-
-sim.startSimulation()
-tool = sim.getObject("/UR5/UR5_connection")
-joint_handles = reset_joints()
-sim.wait(2)
-
-
-for index, row in enumerate(theta_matrix):
-    configs = {
-        0: "ombro L, punho U, cotovelo U",
-        1: "ombro L, punho U, cotovelo D",
-        2: "ombro L, punho D, cotovelo U",
-        3: "ombro L, punho D, cotovelo D",
-        4: "ombro R, punho U, cotovelo U",
-        5: "ombro R, punho U, cotovelo D",
-        6: "ombro R, punho D, cotovelo U",
-        7: "ombro R, punho D, cotovelo D",
-    }
-    if np.isnan(row).any():
-        continue
-    else:
-        disp_row = np.round_(row, 4)
-        print(f"Configuracao {index}: {configs[index]}")
-        print(f"theta_calc = {disp_row.tolist()}")
-
-        set_pos(joint_handles, row)
-        sim.addLog(sim.verbosity_scriptinfos, f"test{index} = {disp_row}")
-        sim.wait(3)
-
-        tool_position = sim.getObjectPosition(tool, sim.handle_world)
-        print(f"p_desejado = {np.round_(final_pos, 4)}")
-        print(f"p_simulado = {np.round_(tool_position, 4)}\n")
-
-sim.stopSimulation()
+print(f"theta_calc =")
+for row in theta_matrix:
+    print(f"  {np.round_(row, 4).tolist()}")
