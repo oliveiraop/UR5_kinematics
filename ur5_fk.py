@@ -27,6 +27,7 @@ def ur5_fk(theta_list):
                              [np.sin(theta[i])*np.sin(alpha[i]), np.cos(theta[i])*np.sin(alpha[i]), np.cos(alpha[i]), np.cos(alpha[i])*d[i]],
                              [0, 0, 0, 1]])
         t_matrix = np.matmul(t_matrix, a_matrix)
+    t_matrix[abs(t_matrix) < 1e-15] = 0
     return t_matrix
 
 # Altera posicoes das juntas
@@ -46,29 +47,30 @@ def set_pos(theta_list):
     target_pos=[theta_list[0], theta_list[1]+np.pi/2, theta_list[2], theta_list[3]+np.pi/2, theta_list[4], theta_list[5]]
     sim.rmlMoveToJointPositions(joint_handles,-1,current_vel,current_accel,max_vel,max_accel,max_jerk,target_pos,target_vel)
 
-# Inicia cliente e salva instancia do simulador atraves de API ZMQ
-client = RemoteAPIClient()
-sim = client.getObject('sim')
+if __name__ == '__main__':
+    # Inicia cliente e salva instancia do simulador atraves de API ZMQ
+    client = RemoteAPIClient()
+    sim = client.getObject('sim')
 
-# Inicia simulacao
-sim.startSimulation()
+    # Inicia simulacao
+    sim.startSimulation()
 
-# Salva referencia das juntas
-joint1 = sim.getObject('/UR5/UR5_joint1')
-joint2 = sim.getObject('/UR5/UR5_joint2')
-joint3 = sim.getObject('/UR5/UR5_joint3')
-joint4 = sim.getObject('/UR5/UR5_joint4')
-joint5 = sim.getObject('/UR5/UR5_joint5')
-joint6 = sim.getObject('/UR5/UR5_joint6')
+    # Salva referencia das juntas
+    joint1 = sim.getObject('/UR5/UR5_joint1')
+    joint2 = sim.getObject('/UR5/UR5_joint2')
+    joint3 = sim.getObject('/UR5/UR5_joint3')
+    joint4 = sim.getObject('/UR5/UR5_joint4')
+    joint5 = sim.getObject('/UR5/UR5_joint5')
+    joint6 = sim.getObject('/UR5/UR5_joint6')
 
-# Teste 1
-print("Teste 1 (theta_i = 0):")
-tool = sim.getObject('/UR5/UR5_connection')
-test1_angles = [0, 0, 0, 0, 0, 0]
-print(f"t_calculado =\n{ur5_fk(test1_angles)}")
-set_pos(test1_angles)
-sim.wait(3)
-tool_position = sim.getObjectPosition(tool, sim.handle_world)
-print(f"posicao_garra_sim = {tool_position}")
+    # Teste 1
+    print("Teste 1 (theta_i = 0):")
+    tool = sim.getObject('/UR5/UR5_connection')
+    test1_angles = [0, 0, 0, 0, 0, 0]
+    print(f"t_calculado =\n{ur5_fk(test1_angles)}")
+    set_pos(test1_angles)
+    sim.wait(3)
+    tool_position = sim.getObjectPosition(tool, sim.handle_world)
+    print(f"posicao_garra_sim = {tool_position}")
 
-sim.stopSimulation()
+    sim.stopSimulation()
