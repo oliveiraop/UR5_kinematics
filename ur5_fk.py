@@ -10,9 +10,9 @@ from zmqRemoteApi import RemoteAPIClient
 
 # Funcao de Cinematica Direta (utilizando parametros DH extraidos do cenario)
 def ur5_fk(theta_list):
-    a = [0, 0, -0.7391 + 0.314, -1.1312 + 0.7391, 0, 0]
+    a = [0, 0, -0.4251, -0.3921, 0, 0]
     alpha = [0, np.pi / 2, 0, 0, np.pi / 2, -np.pi / 2]
-    d = [0.4992 - 0.41, 0, 0, -0.1038 + 0.2140, 0.4994 - 0.4047, -0.0288 + 0.1038]
+    d = [0.0892, 0, 0, 0.1102, 0.0947, -0.0288 + 0.075]
     theta = [
         theta_list[0],
         theta_list[1],
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     # Teste
     print("Teste FK:")
     tool = sim.getObject("/UR5/UR5_connection")
-    test_angles = [0, 0, 0, 0, 0, 0]
+    test_angles = [np.pi / 4, np.pi / 4, np.pi / 4, np.pi / 4, np.pi / 4, np.pi / 4]
     # test_angles = [-np.pi/4, -np.pi/4, -np.pi/4, -np.pi/4, -np.pi/4, -np.pi/4]
     # test_angles = [-np.pi/2, -np.pi/2, -np.pi/2, -np.pi/2, -np.pi/2, -np.pi/2]
     print(f"theta_input = {test_angles}")
