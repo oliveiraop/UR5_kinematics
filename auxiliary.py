@@ -2,7 +2,6 @@ import numpy as np
 
 
 class Aux:
-
     # Altera posicoes das juntas
     def set_pos(self, sim, joint_handles, theta_list):
         vel = 20
@@ -67,34 +66,3 @@ class Aux:
         self.set_pos(sim, joint_handles, [0, 0, 0, 0, 0, 0])
         sim.wait(2)
         return joint_handles
-
-    # Testes
-    def run_test(self, sim, ur5, joint_handles, name, thetas, unit="deg"):
-        print(f"---------------------- {name} ----------------------")
-        if unit == "deg":
-            target_angles = thetas
-            targetPos = [x * np.pi / 180 for x in target_angles]
-        else:
-            targetPos = thetas
-        print(f"Angulos = {np.array(targetPos)}")
-        matrix = ur5.ur5_fk(targetPos)
-        print(f"Posicao Calculada (CD) = {matrix[:3,3].T}")
-
-        self.set_pos(sim, joint_handles, targetPos)
-        sim.wait(2)
-        tool = sim.getObject("/UR5/UR5_connection")
-        tool_matrix = sim.getObjectMatrix(tool, sim.handle_world)
-        tool_matrix = np.matrix(
-            [tool_matrix[0:4], tool_matrix[4:8], tool_matrix[8:12], [0, 0, 0, 1]]
-        )
-        tool_matrix[abs(tool_matrix) < 5e-4] = 0
-        tool_pos = tool_matrix[:3, 3].T
-        print(f"Transf Simulada = {tool_pos}")
-
-        target_pos = tool_matrix
-        base_pos = ur5.t01()
-        calc_thetas = ur5.inverse_kinematic(base_pos, target_pos)
-        print("Angulos Calculados (CI) =")
-        for row in calc_thetas:
-            print(f"  {[round(x,4) for x in row.tolist()]}")
-        print()
