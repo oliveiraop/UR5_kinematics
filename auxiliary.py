@@ -1,68 +1,76 @@
 import numpy as np
 
+from kinematics import UR5_arm
+
+ur5 = UR5_arm()
+
 
 class Aux:
-    # Altera posicoes das juntas
-    def set_pos(self, sim, joint_handles, theta_list):
-        vel = 20
-        accel = 40
-        jerk = 20
-        current_vel = [0, 0, 0, 0, 0, 0, 0]
-        current_accel = [0, 0, 0, 0, 0, 0, 0]
-        max_vel = [
-            vel * np.pi / 180,
-            vel * np.pi / 180,
-            vel * np.pi / 180,
-            vel * np.pi / 180,
-            vel * np.pi / 180,
-            vel * np.pi / 180,
+    def __init__(self, client, sim):
+        self.client = client
+        self.sim = sim
+
+    # Move para a orientacao final indicada (step)
+    def moveToAngle(self, targetPos, targetVels, jointHandles):
+        done = [False for _ in range(0, len(targetPos))]
+        while not all(done):
+            joint_angles = [self.sim.getJointPosition(x) for x in jointHandles]
+            for idx, _ in enumerate(targetPos):
+                if abs(joint_angles[idx] - targetPos[idx]) > 0.1 * np.pi / 180:
+                    self.sim.setJointTargetPosition(jointHandles[idx], targetPos[idx])
+                    self.sim.setJointTargetVelocity(jointHandles[idx], targetVels[idx])
+                else:
+                    done[idx] = True
+            self.client.step()
+
+    # Computa trajetoria cubica e move as juntas
+    def run_trajectory(self, jointHandles, currentConf, targetConfig, tf):
+        pos = []
+        vel = []
+        accel = []
+        currentPos = [
+            currentConf[0],
+            currentConf[1] + np.pi / 2,
+            currentConf[2],
+            currentConf[3] + np.pi / 2,
+            currentConf[4],
+            currentConf[5],
         ]
-        max_accel = [
-            accel * np.pi / 180,
-            accel * np.pi / 180,
-            accel * np.pi / 180,
-            accel * np.pi / 180,
-            accel * np.pi / 180,
-            accel * np.pi / 180,
+        targetPos = [
+            targetConfig[0],
+            targetConfig[1] + np.pi / 2,
+            targetConfig[2],
+            targetConfig[3] + np.pi / 2,
+            targetConfig[4],
+            targetConfig[5],
         ]
-        max_jerk = [
-            jerk * np.pi / 180,
-            jerk * np.pi / 180,
-            jerk * np.pi / 180,
-            jerk * np.pi / 180,
-            jerk * np.pi / 180,
-            jerk * np.pi / 180,
-        ]
-        target_vel = [0, 0, 0, 0, 0, 0]
-        target_pos = [
-            theta_list[0],
-            theta_list[1] + np.pi / 2,
-            theta_list[2],
-            theta_list[3] + np.pi / 2,
-            theta_list[4],
-            theta_list[5],
-        ]
-        sim.rmlMoveToJointPositions(
-            joint_handles,
-            -1,
-            current_vel,
-            current_accel,
-            max_vel,
-            max_accel,
-            max_jerk,
-            target_pos,
-            target_vel,
-        )
+        for i, _ in enumerate(targetPos):
+            pos_temp, vel_temp, accel_temp = ur5.cubic(
+                self.sim, currentPos[i], targetPos[i], 0, 0, 0, tf
+            )
+            pos.append(pos_temp.tolist())
+            vel.append(vel_temp.tolist())
+            accel.append(accel_temp.tolist())
+        for idx, _ in enumerate(pos[0]):
+            targetPos = np.array(pos)[:, idx].tolist()
+            targetVel = np.array(vel)[:, idx].tolist()
+            self.moveToAngle(
+                targetPos,
+                targetVel,
+                jointHandles,
+            )
 
     # Reseta posicao das juntas
-    def reset_joints(self, sim):
-        joint1 = sim.getObject("/UR5/UR5_joint1")
-        joint2 = sim.getObject("/UR5/UR5_joint2")
-        joint3 = sim.getObject("/UR5/UR5_joint3")
-        joint4 = sim.getObject("/UR5/UR5_joint4")
-        joint5 = sim.getObject("/UR5/UR5_joint5")
-        joint6 = sim.getObject("/UR5/UR5_joint6")
-        joint_handles = [joint1, joint2, joint3, joint4, joint5, joint6]
-        self.set_pos(sim, joint_handles, [0, 0, 0, 0, 0, 0])
-        sim.wait(2)
-        return joint_handles
+    def reset_joints(self):
+        currentConf = [0, -np.pi / 2, 0, -np.pi / 2, 0, 0]
+        targetConfig = [0, 0, 0, 0, 0, 0]
+        tf = 5
+        joint1 = self.sim.getObject("/UR5/UR5_joint1")
+        joint2 = self.sim.getObject("/UR5/UR5_joint2")
+        joint3 = self.sim.getObject("/UR5/UR5_joint3")
+        joint4 = self.sim.getObject("/UR5/UR5_joint4")
+        joint5 = self.sim.getObject("/UR5/UR5_joint5")
+        joint6 = self.sim.getObject("/UR5/UR5_joint6")
+        jointHandles = [joint1, joint2, joint3, joint4, joint5, joint6]
+        self.run_trajectory(jointHandles, currentConf, targetConfig, tf)
+        return jointHandles

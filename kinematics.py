@@ -3,6 +3,19 @@ from numpy import cos, sin
 
 
 class UR5_arm:
+    # Transformacao via rotacao e deslocamento
+    def get_trans_matrix(self, rot, dis):
+        [a, b, g] = rot
+        pos = np.array([dis])
+        r_x_a = np.array([[1, 0, 0], [0, cos(a), -sin(a)], [0, sin(a), cos(a)]])
+        r_y_b = np.array([[cos(b), 0, sin(b)], [0, 1, 0], [-sin(b), 0, cos(b)]])
+        r_z_g = np.array([[cos(g), -sin(g), 0], [sin(g), cos(g), 0], [0, 0, 1]])
+        r_total = r_x_a @ r_y_b @ r_z_g
+        last_row = np.array([[0, 0, 0, 1]])
+        t_matrix = np.concatenate(
+            (np.concatenate((r_total, pos.T), axis=1), last_row), axis=0
+        )
+        return t_matrix
 
     # Tranformacao da origem para a base
     def t01(self):
@@ -12,7 +25,7 @@ class UR5_arm:
         return T01
 
     # Funcao de Cinematica Direta do UR5
-    def ur5_fk(self, theta_list):
+    def forward_kinematic(self, theta_list):
         a = [0, 0, -0.425, -0.39225, 0, 0]
         alpha = [0, np.pi / 2, 0, 0, np.pi / 2, -np.pi / 2]
         d = [0.089159, 0, 0, 0.10915, 0.09465, 0.075]
@@ -91,18 +104,16 @@ class UR5_arm:
         return t_dh
 
     # Funcao de Cinematica Inversa do UR5
-    def inverse_kinematic(self, t_o_0, t_o_6):
+    def inverse_kinematic(self, t_0_6):
         def r(num):
             abs_num = np.fabs(num)
             if abs_num > 1:
-                if abs_num - 1 < 1e-6:
+                if abs_num - 1 < 1e-2:
                     return np.modf(num)[1]
             return num
 
         # Distancia entre junta 6 e posicao da garra
         d6 = 0.075
-
-        t_0_6 = np.linalg.inv(t_o_0) @ t_o_6
 
         d4 = 0.10915
 
@@ -215,8 +226,9 @@ class UR5_arm:
         return theta_drop_nan
 
     # Cubica
-    def cubic(self, qi, qf, vi, vf, ti, tf):
-        t = np.arange(ti, tf, 0.05)
+    def cubic(self, sim, qi, qf, vi, vf, ti, tf):
+        dt = sim.getSimulationTimeStep()
+        t = np.arange(ti, tf, dt)
         c = np.ones(t.size)
         m = np.matrix(
             [

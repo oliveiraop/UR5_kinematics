@@ -233,7 +233,7 @@ class RemoteAPIClient:
                 if callback(outPos,outVel,outAccel,auxData):
                     break
             else:
-                raise RuntimeError("sim.ruckigStep returned error code "+result)
+                raise RuntimeError(f"sim.ruckigStep returned error code {result}")
             if result == 0:
                 self.step()
         self.sim.ruckigRemove(ruckigObject)
@@ -287,7 +287,7 @@ class RemoteAPIClient:
                         if callback(outMatrix,nv,na,auxData):
                             break
                     else:
-                        raise RuntimeError("sim.ruckigStep returned error code "+result)
+                        raise RuntimeError(f"sim.ruckigStep returned error code {result}")
                     if result == 0:
                         self.step()
                 self.sim.ruckigRemove(ruckigObject)
@@ -330,7 +330,7 @@ class RemoteAPIClient:
                     if callback(outMatrix,nv,na,auxData):
                         break
                 else:
-                    raise RuntimeError("sim.ruckigStep returned error code "+result)
+                    raise RuntimeError(f"sim.ruckigStep returned error code {result}")
                 if result == 0:
                     self.step()
             self.sim.ruckigRemove(ruckigObject)
